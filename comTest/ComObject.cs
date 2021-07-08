@@ -1,10 +1,6 @@
-﻿using Microsoft.CSharp.RuntimeBinder;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Dynamic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 
 namespace comTest
@@ -14,8 +10,6 @@ namespace comTest
         private object _instance;
         public static COMObject CreateObject(string progID)
                     => new COMObject(Activator.CreateInstance(Type.GetTypeFromProgID(progID, true)));
-        public static COMObject CreateObjectFromType(Type type)
-                    => new COMObject(Activator.CreateInstance(type));
 
         public COMObject(object instance)
         {
@@ -30,41 +24,15 @@ namespace comTest
             _instance = instance;
         }
 
-
-        public List<string> GetTypes()
-        {
-            List<string> listprops = new List<string>();
-            Type myType = _instance.GetType();
-            IList<PropertyInfo> props = new List<PropertyInfo>(myType.GetProperties());
-
-            foreach (PropertyInfo prop in props)
-            {
-                listprops.Add(prop.Name);
-                //object propValue = prop.GetValue(myObject, null);
-
-                // Do something with propValue
-            }
-            return listprops;
-        }
-
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            //var res1 
             result = Unwrap().GetType().InvokeMember(
-            binder.Name,
-            BindingFlags.GetProperty,
-            Type.DefaultBinder,
-            Unwrap(),
-            new object[] { }
-        );
-            //var res2 = Unwrap().GetType().InvokeMember(
-            //    binder.Name,
-            //    BindingFlags.GetField,
-            //    Type.DefaultBinder,
-            //    Unwrap(),
-            //    new object[] { }
-            //);
-            //result = res1 ?? res2;
+                binder.Name,
+                BindingFlags.GetProperty,
+                Type.DefaultBinder,
+                Unwrap(),
+                new object[] { }
+            );
             return true;
         }
 
@@ -77,13 +45,6 @@ namespace comTest
                 Unwrap(),
                 new object[] { WrapIfRequired(value) }
             );
-            //Unwrap().GetType().InvokeMember(
-            //    binder.Name,
-            //    BindingFlags.SetField,
-            //    Type.DefaultBinder,
-            //    Unwrap(),
-            //    new object[] { WrapIfRequired(value) }
-            //);
             return true;
         }
 
@@ -126,14 +87,6 @@ namespace comTest
 
         private static object WrapIfRequired(object obj)
             => obj?.GetType()?.IsCOMObject == true ? new COMObject(obj) : obj;
-
-        static object GetDynamicMember(object obj, string memberName)
-        {
-            var binder = Microsoft.CSharp.RuntimeBinder.Binder.GetMember(CSharpBinderFlags.None, memberName, obj.GetType(),
-                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-            var callsite = CallSite<Func<CallSite, object, object>>.Create(binder);
-            return callsite.Target(callsite, obj);
-        }
 
         public void Dispose()
         {
